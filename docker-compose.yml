@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # PostgreSQL Database
   db:
     image: postgres:15
     container_name: task_db
@@ -10,10 +11,39 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: taskqueue
     ports:
-      # Maps port 5432 inside the container to 5432 on your laptop
+      # Maps port 5432 inside the container to 5432 on the host machine
       - "5432:5432" 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Python API
+  api:
+    build: ./fastapi-service
+    container_name: task_api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/taskqueue
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # TypeScript Worker
+  worker:
+    build: ./hono-service
+    container_name: task_worker
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/taskqueue
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   postgres_data:

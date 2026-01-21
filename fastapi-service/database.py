@@ -1,13 +1,14 @@
+import os
 from sqlmodel import SQLModel
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from typing import AsyncGenerator
 
 # 1. The Connection String
-# For now, we point to "localhost". Later, when we use Docker, 
-# we will change this to point to the docker container name.
+# For now, we point to "localhost", 
+# Override this to point to the docker container name when not running locally.
 # Format: postgresql+asyncpg://user:password@host:port/database_name
-DATABASE_URL = "postgresql+asyncpg://postgres:postgres@localhost:5432/taskqueue"
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/taskqueue")
 
 # 2. Create the Async Engine
 # echo=True prints the raw SQL to the terminal (great for debugging/learning)
