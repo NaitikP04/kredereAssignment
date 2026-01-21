@@ -1,0 +1,5 @@
+fastapi
+uvicorn[standard]   # The server that runs FastAPI
+sqlmodel            # The ORM (database interaction)
+psycopg2-binary     # The driver that lets Python talk to PostgreSQL
+asyncpg             # Required for async database operations

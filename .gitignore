@@ -1,0 +1,15 @@
+# --- Python (FastAPI) ---
+__pycache__/
+*.pyc
+venv/
+.env
+
+# --- JavaScript/Bun (Hono) ---
+node_modules/
+dist/
+.bun/
+*.log
+
+# --- System & IDE ---
+.DS_Store
+.vscode/
