@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query'; 
+import { useSearchParams, useRouter } from 'next/navigation';
 import { DateRange } from 'react-day-picker';
-import { RowSelectionState } from "@tanstack/react-table";
+import { RowSelectionState, SortingState } from "@tanstack/react-table";
 import { 
     Clock, 
     CheckCircle2, 
@@ -13,7 +14,8 @@ import {
     FileText, 
     Bell, 
     X,
-    Trash2 
+    Trash2,
+    Home 
 } from 'lucide-react';
 
 import { columns } from './columns';
@@ -32,6 +34,8 @@ import {
 
 import { Job } from '@/types';
 import { useDebounce } from '@/hooks/use-debounce';
+import Link from "next/link";
+import { Plus } from 'lucide-react';
 
 // --- FETCHER ---
 async function fetchJobs(params: URLSearchParams) {
@@ -42,19 +46,63 @@ async function fetchJobs(params: URLSearchParams) {
 
 export default function JobsPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // --- Initialize state from URL ---
+  const getInitialStatusFilters = useCallback(() => {
+    const statuses = searchParams.getAll('status');
+    return new Set(statuses);
+  }, [searchParams]);
+
+  const getInitialTypeFilters = useCallback(() => {
+    const types = searchParams.getAll('type');
+    return new Set(types);
+  }, [searchParams]);
+
+  const getInitialDateRange = useCallback((): DateRange | undefined => {
+    const from = searchParams.get('from');
+    const to = searchParams.get('to');
+    if (from) {
+      return {
+        from: new Date(from),
+        to: to ? new Date(to) : undefined,
+      };
+    }
+    return undefined;
+  }, [searchParams]);
 
   // --- STATE ---
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(searchParams.get('search') || '');
   const debouncedSearch = useDebounce(search, 300);
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: 'created_at', desc: true } // Default sort
+  ]);
   
-  // Filters
-  const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set());
-  const [typeFilters, setTypeFilters] = useState<Set<string>>(new Set());
-  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  // Filters (initialized from URL)
+  const [statusFilters, setStatusFilters] = useState<Set<string>>(getInitialStatusFilters);
+  const [typeFilters, setTypeFilters] = useState<Set<string>>(getInitialTypeFilters);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(getInitialDateRange);
   
   // Pagination
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10); 
+  const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
+  const [pageSize, setPageSize] = useState(Number(searchParams.get('pageSize')) || 10);
+
+  // --- Sync state to URL ---
+  useEffect(() => {
+    const params = new URLSearchParams();
+    
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    statusFilters.forEach(s => params.append('status', s));
+    typeFilters.forEach(t => params.append('type', t));
+    if (dateRange?.from) params.set('from', dateRange.from.toISOString());
+    if (dateRange?.to) params.set('to', dateRange.to.toISOString());
+    if (page > 1) params.set('page', page.toString());
+    if (pageSize !== 10) params.set('pageSize', pageSize.toString());
+    
+    const newUrl = params.toString() ? `?${params.toString()}` : '/jobs';
+    router.replace(newUrl, { scroll: false });
+  }, [debouncedSearch, statusFilters, typeFilters, dateRange, page, pageSize, router]); 
 
   // Selection
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -63,6 +111,12 @@ export default function JobsPage() {
   const queryParams = new URLSearchParams();
   queryParams.set('limit', pageSize.toString());
   queryParams.set('offset', ((page - 1) * pageSize).toString());
+
+  if (sorting.length > 0) {
+    const sort = sorting[0];
+    queryParams.set('sort_by', sort.id);
+    queryParams.set('sort_order', sort.desc ? 'desc' : 'asc');
+  }
 
   if (debouncedSearch) queryParams.set('search', debouncedSearch);
   if (dateRange?.from) queryParams.set('start_date', dateRange.from.toISOString());
@@ -73,7 +127,7 @@ export default function JobsPage() {
 
   // --- FETCH ---
   const { data: jobs = [], isLoading, isError } = useQuery<Job[]>({
-    queryKey: ['jobs', debouncedSearch, Array.from(statusFilters), Array.from(typeFilters), page, pageSize, dateRange], 
+    queryKey: ['jobs', debouncedSearch, Array.from(statusFilters), Array.from(typeFilters), page, pageSize, dateRange, sorting], 
     queryFn: () => fetchJobs(queryParams),
   });
 
@@ -139,11 +193,27 @@ export default function JobsPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Jobs</h2>
-        <p className="text-muted-foreground">
-          Manage and monitor all background tasks.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Jobs</h2>
+          <p className="text-muted-foreground">
+            Manage and monitor all background tasks.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/">
+            <Button variant="outline">
+              <Home className="mr-2 h-4 w-4" />
+              Dashboard
+            </Button>
+          </Link>
+          <Link href="/jobs/new">
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Job
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -198,9 +268,8 @@ export default function JobsPage() {
             </SelectTrigger>
             <SelectContent>
                 <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="25">25</SelectItem>
                 <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
             </SelectContent>
         </Select>
       </div>
@@ -245,6 +314,8 @@ export default function JobsPage() {
             data={jobs} 
             rowSelection={rowSelection}
             setRowSelection={setRowSelection}
+            sorting={sorting}
+            setSorting={setSorting}
         />
       )}
 

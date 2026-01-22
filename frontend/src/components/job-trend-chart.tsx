@@ -43,13 +43,13 @@ export function JobTrendChart() {
   });
 
   return (
-    <Card className="col-span-3">
-      <CardHeader>
+    <Card className="col-span-3 h-fit">
+      <CardHeader className="pb-2">
         <CardTitle>Weekly Volume</CardTitle>
       </CardHeader>
-      <CardContent className="pl-2">
+      <CardContent className="pl-2 pb-4">
         <div className="h-[200px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minHeight={200}>
             <LineChart data={data}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis 

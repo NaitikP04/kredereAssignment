@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const BACKEND_URL = 'http://localhost:8000'; // Your Python API
+const BACKEND_URL = 'http://localhost:8000'; 
 
 // GET /api/jobs -> Proxies to GET http://localhost:8000/jobs
 export async function GET(request: Request) {

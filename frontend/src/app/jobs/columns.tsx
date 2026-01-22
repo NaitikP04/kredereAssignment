@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { formatDistanceToNow } from 'date-fns';
 
-// This defines the shape of our data for the table
 export const columns: ColumnDef<Job>[] = [
     {
     id: "select",
@@ -57,7 +56,7 @@ export const columns: ColumnDef<Job>[] = [
       return (
         <Button
           variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           Priority
           <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -65,7 +64,7 @@ export const columns: ColumnDef<Job>[] = [
       );
     },
     cell: ({ row }) => {
-        const priority = parseInt(row.getValue('priority'));
+        const priority = Number(row.getValue('priority'));
         return (
             <div className="flex pl-4">
                 {[...Array(priority)].map((_, i) => (
@@ -73,6 +72,11 @@ export const columns: ColumnDef<Job>[] = [
                 ))}
             </div>
         )
+    },
+    sortingFn: (rowA, rowB, columnId) => {
+      const a = Number(rowA.getValue(columnId));
+      const b = Number(rowB.getValue(columnId));
+      return a - b;
     },
   },
   {
@@ -95,7 +99,15 @@ export const columns: ColumnDef<Job>[] = [
   },
   {
     accessorKey: 'created_at',
-    header: 'Created',
+    header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          Created
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+    ),
     cell: ({ row }) => (
       <span className="text-xs text-muted-foreground">
         {formatDistanceToNow(new Date(row.getValue('created_at')), { addSuffix: true })}

@@ -48,6 +48,8 @@ async def list_jobs(
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     search: Optional[str] = None,     # Optional query param: ?search=keyword
+    sort_by: Optional[str] = Query(default="created_at"),    # Sort column
+    sort_order: Optional[str] = Query(default="desc"),       # Sort direction: asc or desc
     limit: int = Query(default=10, le=100),          # limit results to 10 by default, max 100
     offset: int = 0,          # Pagination: where to start
     session: AsyncSession = Depends(get_session)
@@ -81,9 +83,20 @@ async def list_jobs(
     
     if end_date:
         query = query.where(Job.created_at <= end_date)
+    
+    # Dynamic sorting
+    sort_column_map = {
+        "created_at": Job.created_at,
+        "priority": Job.priority,
+        "status": Job.status,
+        "type": Job.type,
+    }
+    sort_column = sort_column_map.get(sort_by, Job.created_at)
+    if sort_order == "asc":
+        query = query.order_by(sort_column.asc())
+    else:
+        query = query.order_by(sort_column.desc())
         
-    # Add pagination and ordering (newest first)
-    query = query.order_by(Job.created_at.desc())
     query = query.offset(offset).limit(limit)
     
     # Execute the query

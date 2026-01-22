@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, RefreshCw, XCircle, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, RefreshCw, XCircle, Clock, CheckCircle2, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { Job } from '@/types';
 import { format } from 'date-fns';
+import { useState } from 'react';
 // import { toast } from 'sonner'; // Uncomment if you installed sonner
 
 // Fetch single job
@@ -125,21 +126,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    {/* JSON Viewers */}
-                    <div>
-                        <h3 className="font-semibold mb-2">Payload</h3>
-                        <div className="bg-slate-950 text-slate-50 p-4 rounded-md font-mono text-sm overflow-auto max-h-[300px]">
-                            <pre>{JSON.stringify(job.payload, null, 2)}</pre>
-                        </div>
-                    </div>
+                    {/* Collapsible JSON Viewers */}
+                    <CollapsibleJson title="Payload" data={job.payload} defaultOpen={true} />
 
                     {job.result && (
-                        <div>
-                            <h3 className="font-semibold mb-2">Result</h3>
-                            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-md font-mono text-sm overflow-auto">
-                                <pre>{JSON.stringify(job.result, null, 2)}</pre>
-                            </div>
-                        </div>
+                        <CollapsibleJson title="Result" data={job.result} variant="light" />
                     )}
                     
                     {job.error && (
@@ -256,6 +247,46 @@ function Timeline({ job }: { job: Job }) {
                     </div>
                 );
             })}
+        </div>
+    );
+}
+
+// Collapsible JSON Viewer Component
+function CollapsibleJson({ 
+    title, 
+    data, 
+    defaultOpen = false,
+    variant = 'dark'
+}: { 
+    title: string; 
+    data: unknown; 
+    defaultOpen?: boolean;
+    variant?: 'dark' | 'light';
+}) {
+    const [isOpen, setIsOpen] = useState(defaultOpen);
+    
+    const bgClass = variant === 'dark' 
+        ? 'bg-slate-950 text-slate-50' 
+        : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100';
+    
+    return (
+        <div>
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-2 font-semibold mb-2 hover:text-primary transition-colors"
+            >
+                {isOpen ? (
+                    <ChevronDown className="h-4 w-4" />
+                ) : (
+                    <ChevronRight className="h-4 w-4" />
+                )}
+                {title}
+            </button>
+            {isOpen && (
+                <div className={`${bgClass} p-4 rounded-md font-mono text-sm overflow-auto max-h-[300px]`}>
+                    <pre>{JSON.stringify(data, null, 2)}</pre>
+                </div>
+            )}
         </div>
     );
 }

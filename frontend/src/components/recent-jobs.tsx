@@ -12,6 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Job } from '@/types';
+import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 
 async function fetchRecentJobs(): Promise<Job[]> {
@@ -22,6 +23,7 @@ async function fetchRecentJobs(): Promise<Job[]> {
 }
 
 export function RecentJobs() {
+  const router = useRouter();
   const { data: jobs, isLoading } = useQuery({
     queryKey: ['recent-jobs'],
     queryFn: fetchRecentJobs,
@@ -46,7 +48,7 @@ export function RecentJobs() {
         </TableHeader>
         <TableBody>
           {jobs?.map((job) => (
-            <TableRow key={job.id}>
+            <TableRow key={job.id} onClick={() => router.push(`/jobs/${job.id}`)} className="cursor-pointer hover:bg-muted/50">
               <TableCell className="font-mono text-xs text-muted-foreground">
                 {job.id.slice(0, 8)}...
               </TableCell>

@@ -3,7 +3,6 @@ import sql from './db';
 
 const app = new Hono();
 
-// Define what a Job looks like in TypeScript
 interface Job {
   id: string;
   type: string;
@@ -12,7 +11,7 @@ interface Job {
   payload: any;
 }
 
-// GET /stats endpoint (Required by assignment)
+// GET /stats endpoint
 app.get('/stats', async (c) => {
   const stats = await sql`
     SELECT status, COUNT(*) as count 
@@ -22,10 +21,9 @@ app.get('/stats', async (c) => {
   return c.json(stats);
 });
 
-// POST /process endpoint (The Core Logic)
+// POST /process endpoint 
 app.post('/process', async (c) => {
   try {
-    // This is the atomic "Find and Lock" query
     const jobs = await sql<Job[]>`
       UPDATE job
       SET status = 'processing', 
@@ -77,7 +75,8 @@ app.post('/complete/:id', async (c) => {
     UPDATE job
     SET status = 'completed',
         result = ${result},
-        updated_at = NOW()
+        updated_at = NOW(),
+        completed_at = NOW()
     WHERE id = ${id}
     RETURNING *;
   `;
@@ -112,8 +111,8 @@ app.post('/fail/:id', async (c) => {
     UPDATE job
     SET status = ${newStatus},
         error = ${error},
-        updated_at = NOW()
-        completed_at = NOW()
+        updated_at = NOW(),
+        completed_at = CASE WHEN ${newStatus} = 'failed' THEN NOW() ELSE NULL END
     WHERE id = ${id}
     RETURNING *;
   `;
