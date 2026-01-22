@@ -121,9 +121,10 @@ export default function CreateJobPage() {
         // toast.success("Job created successfully");
         router.push(`/jobs/${newJob.id}`);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error(error);
-        alert(error.message || "Failed to create job");
+        const message = error instanceof Error ? error.message : "Failed to create job";
+        alert(message);
     } finally {
         setIsSubmitting(false);
     }
