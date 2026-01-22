@@ -40,6 +40,7 @@ class Job(SQLModel, table=True):
     attempts: int = Field(default=0)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime(timezone=True)))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), sa_column=Column(DateTime(timezone=True)))
+    completed_at: Optional[datetime] = Field(default=None, sa_column=Column(DateTime(timezone=True)))
     
     # This might be null if the job isn't scheduled for the future
     scheduled_for: Optional[datetime] = Field(default=None, sa_column=Column(DateTime(timezone=True)))

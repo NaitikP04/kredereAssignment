@@ -1,10 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import String
+from sqlmodel import Session, select, col, or_
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
+from sqlalchemy import cast, String
+from typing import List, Optional
+from datetime import datetime
 
 from database import get_session
-from models import Job, JobStatus
+from models import Job, JobStatus, JobType
 from schemas import JobCreate
 
 # Create the router
@@ -40,23 +43,48 @@ async def create_job(
 
 @router.get("/jobs", response_model=List[Job])
 async def list_jobs(
-    status: JobStatus = None, # Optional query param: ?status=pending
-    limit: int = 10,          # Pagination: how many to show
+    status: Optional[List[JobStatus]] = Query(default=None), # Optional query param: ?status=pending
+    type: Optional[List[JobType]] = Query(default=None),     # Optional query param: ?type=type_a
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    search: Optional[str] = None,     # Optional query param: ?search=keyword
+    limit: int = Query(default=10, le=100),          # limit results to 10 by default, max 100
     offset: int = 0,          # Pagination: where to start
     session: AsyncSession = Depends(get_session)
 ):
     """
-    List jobs with optional filtering by status and pagination.
+    List jobs with filtering by status, type, search keyword, and pagination.
     """
     # Start building the query
     query = select(Job)
     
     # If the user provided a status (e.g., /jobs?status=pending), add that filter
     if status:
-        query = query.where(Job.status == status)
+        query = query.where(Job.status.in_(status))
+
+    # If the user provided a type (e.g., /jobs?type=type_a), add that filter
+    if type:
+        query = query.where(Job.type.in_(type))
+    
+    # If the user provided a search keyword, filter by ID or payload content
+    if search:
+        # We cast the JSON payload to text to search inside it
+        query = query.where(
+            or_(
+                cast(Job.id, String).ilike(f"%{search}%"),
+                cast(Job.payload, String).ilike(f"%{search}%")
+            )
+        )
+    
+    if start_date:
+        query = query.where(Job.created_at >= start_date)
+    
+    if end_date:
+        query = query.where(Job.created_at <= end_date)
         
     # Add pagination and ordering (newest first)
-    query = query.offset(offset).limit(limit).order_by(Job.created_at.desc())
+    query = query.order_by(Job.created_at.desc())
+    query = query.offset(offset).limit(limit)
     
     # Execute the query
     result = await session.execute(query)

@@ -113,6 +113,7 @@ app.post('/fail/:id', async (c) => {
     SET status = ${newStatus},
         error = ${error},
         updated_at = NOW()
+        completed_at = NOW()
     WHERE id = ${id}
     RETURNING *;
   `;

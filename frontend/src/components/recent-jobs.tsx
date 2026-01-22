@@ -15,8 +15,8 @@ import { Job } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 
 async function fetchRecentJobs(): Promise<Job[]> {
-  // Fetch only the latest 5 jobs for the dashboard
-  const res = await fetch('/api/jobs?limit=5');
+  // Fetch the last 10 jobs for the dashboard
+  const res = await fetch('/api/jobs?limit=10');
   if (!res.ok) throw new Error('Failed to fetch jobs');
   return res.json();
 }

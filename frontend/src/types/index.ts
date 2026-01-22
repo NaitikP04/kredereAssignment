@@ -15,6 +15,7 @@ export interface Job {
   created_at: string;
   updated_at: string;
   scheduled_for?: string;
+  completed_at?: string;
 }
 
 export interface JobStats {
