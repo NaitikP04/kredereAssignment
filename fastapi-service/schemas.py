@@ -1,7 +1,8 @@
 from sqlmodel import SQLModel
 from typing import Dict, Any
-from pydantic import field_validator
+from pydantic import field_validator, Field
 from models import JobType
+
 
 # This is the "Input" model
 # We only ask for the things we need to start a job.
@@ -17,3 +18,6 @@ class JobCreate(SQLModel):
         if not (1 <= v <= 5):
             raise ValueError('Priority must be between 1 and 5')
         return v
+    
+class JobUpdate(SQLModel):
+    priority: int = Field(ge=1, le=5, description="New priority level (1-5)")

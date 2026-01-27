@@ -11,6 +11,7 @@ import { ArrowLeft, RefreshCw, XCircle, Clock, CheckCircle2, AlertCircle, Chevro
 import { Job } from '@/types';
 import { format } from 'date-fns';
 import { useState } from 'react';
+import { PriorityUpdater } from "@/components/priority-updater";
 // import { toast } from 'sonner'; // Uncomment if you installed sonner
 
 // Fetch single job
@@ -71,6 +72,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     },
   });
 
+  
+
   if (isLoading) return <div className="p-8">Loading job details...</div>;
   if (error || !job) return <div className="p-8 text-red-500">Job not found</div>;
 
@@ -83,6 +86,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           Back to Jobs
         </Button>
         <div className="flex gap-2">
+            <PriorityUpdater 
+            jobId={job.id} 
+            currentPriority={job.priority}
+            status={job.status}
+            />
+
             {/* Context Sensitive Buttons */}
             {job.status === 'pending' && (
                 <Button 

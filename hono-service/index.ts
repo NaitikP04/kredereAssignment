@@ -122,3 +122,39 @@ app.post('/fail/:id', async (c) => {
     job: updated[0]
   });
 });
+
+
+// POST /process-batch endpoint 
+app.post('/process-batch', async (c) => {
+  try {
+    const jobs = await sql<Job[]>`
+      UPDATE job
+      SET status = 'processing', 
+          updated_at = NOW(),
+          attempts = attempts + 1
+      WHERE id IN (
+        SELECT id
+        FROM job
+        WHERE status = 'pending'
+        ORDER BY priority DESC, created_at ASC
+        LIMIT 10
+        FOR UPDATE SKIP LOCKED
+      )
+      RETURNING *;
+    `;
+
+    // Handle case: No jobs found
+    if (jobs.length === 0) {
+      return c.json({ message: 'No pending jobs found' }, 404);
+    }
+    
+    return c.json({
+      message: `Picked up ${jobs.length} jobs`,
+      jobs: jobs
+    });
+
+  } catch (error) {
+    console.error(error);
+    return c.json({ error: 'Database error' }, 500);
+  }
+});

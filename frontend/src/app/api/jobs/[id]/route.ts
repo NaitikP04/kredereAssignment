@@ -38,3 +38,33 @@ export async function DELETE(
     return NextResponse.json({ error: 'Backend error' }, { status: 500 });
   }
 }
+
+// PATCH /api/jobs/:id -> Proxies to PATCH http://localhost:8000/jobs/:id
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    const response = await fetch(`${BACKEND_URL}/jobs/${id}`, { 
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return NextResponse.json(errorData, { status: response.status });
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to fetch backend' }, { status: 500 });
+  }
+}

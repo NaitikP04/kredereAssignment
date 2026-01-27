@@ -8,7 +8,7 @@ from datetime import datetime
 
 from database import get_session
 from models import Job, JobStatus, JobType
-from schemas import JobCreate
+from schemas import JobCreate, JobUpdate
 
 # Create the router
 router = APIRouter()
@@ -143,3 +143,35 @@ async def cancel_job(
     await session.delete(job)
     await session.commit()
     return None
+
+@router.patch("/jobs/{job_id}", response_model=Job)
+async def update_job_priority(
+    job_id: str,
+    job_update: JobUpdate,
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Update a pending job's priority
+    """
+    job = await session.get(Job, job_id)
+    
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Business Logic Rule: Can only update if PENDING
+    if job.status != JobStatus.pending:
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot edit job that is already processing or completed"
+        )
+    
+    job.priority = job_update.priority
+    
+    # Commit (Save to DB)
+    await session.commit()
+    
+    # Refresh (Update our object with ID and Timestamps from DB)
+    await session.refresh(job)
+    
+    return job
+    
